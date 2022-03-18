@@ -1,5 +1,7 @@
 import 'dart:io';
 import 'package:dory/components/dory_constants.dart';
+import 'package:dory/components/dory_page_route.dart';
+import 'package:dory/pages/add/add_alarm_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,7 +15,7 @@ class AddMedicinePage extends StatefulWidget {
 
 class _AddMedicinePageState extends State<AddMedicinePage> {
   final _nameController = TextEditingController();
-  File? _pickedImage;
+  File? _medicineImage;
 
   @override
   void dispose() {
@@ -49,69 +51,11 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
                 ),
                 const SizedBox(height: largeSpace),
                 Center(
-                  child: CircleAvatar(
-                    radius: 40,
-                    child: CupertinoButton(
-                      onPressed: () {
-                        showModalBottomSheet(
-                            context: context,
-                            builder: (context) {
-                              return SafeArea(
-                                child: Padding(
-                                  padding: pagePadding,
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      TextButton(
-                                        onPressed: () {
-                                          ImagePicker()
-                                              .pickImage(
-                                                  source: ImageSource.camera)
-                                              .then((xfile) {
-                                            if (xfile != null) {
-                                              setState(() {
-                                                _pickedImage = File(xfile.path);
-                                              });
-                                            }
-                                            Navigator.maybePop(context);
-                                          });
-                                        },
-                                        child: const Text('카메라로 촬영'),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          ImagePicker()
-                                              .pickImage(
-                                                  source: ImageSource.gallery)
-                                              .then((xfile) {
-                                            if (xfile != null) {
-                                              setState(() {
-                                                _pickedImage = File(xfile.path);
-                                              });
-                                            }
-                                            Navigator.maybePop(context);
-                                          });
-                                        },
-                                        child: const Text('앨범에서 가져오기'),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            });
-                      },
-                      padding: _pickedImage == null ? null : EdgeInsets.zero,
-                      child: _pickedImage == null
-                          ? const Icon(
-                              CupertinoIcons.photo_camera_solid,
-                              size: 30,
-                              color: Colors.white,
-                            )
-                          : CircleAvatar(
-                              foregroundImage: FileImage(_pickedImage!),
-                              radius: 40,
-                            ),
-                    ),
+                  // 아래 메디슨이미지버튼에 대한 부분은 코드 최하단에 별도로 분리해놨어. 그쪽에서 불러온거야.
+                  child: MedicineImageButton(
+                    changeImageFile: (File? value) {
+                      _medicineImage = value;
+                    },
                   ),
                 ),
                 // 아래 코드에 보면 라지스페이지 + 레귤러스페이스를 더해주면 여백 공간을 더 줄 수 있어
@@ -136,6 +80,9 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
                     // 아래 텍스트필드패딩도 도리 콘스턴트스에서 들어온거야
                     contentPadding: textFieldContentPadding,
                   ),
+                  onChanged: (_) {
+                    setState(() {});
+                  },
                 ),
               ],
             ),
@@ -149,7 +96,8 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
           child: SizedBox(
             height: submitButtonHeight,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _nameController.text.isEmpty ? null : _onAddAlarmPage,
+              // onPressed: ,
               // '다음'이라는 글자에 스타일을 줄건데, 텍스트 쪽에 스타일을 주지 않고, 아래 style이라는 걸 별도로
               // 만든 이유는, elevatedbutton에서 갖고있는 텍스트 스타일하고 부딪히면서 검정색으로 글자가 표기되는
               // 오류가 발생될 수 있기 때문이야.
@@ -158,6 +106,108 @@ class _AddMedicinePageState extends State<AddMedicinePage> {
               child: Text('다음'),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _onAddAlarmPage() {
+    Navigator.push(
+      context,
+      // 여기가 페이드 효과를 마련하는 곳
+      FadePageRoute(
+        page: AddAlarmPage(
+          medicineImage: _medicineImage,
+          medicineName: _nameController.text,
+        ),
+      ),
+    );
+  }
+}
+
+class MedicineImageButton extends StatefulWidget {
+  const MedicineImageButton({Key? key, required this.changeImageFile})
+      : super(key: key);
+
+  final ValueChanged<File?> changeImageFile;
+
+  @override
+  State<MedicineImageButton> createState() => _MedicineImageButtonState();
+}
+
+class _MedicineImageButtonState extends State<MedicineImageButton> {
+  File? _pickedImage;
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 40,
+      child: CupertinoButton(
+        onPressed: _showBottomSheet,
+        padding: _pickedImage == null ? null : EdgeInsets.zero,
+        child: _pickedImage == null
+            ? const Icon(
+                CupertinoIcons.photo_camera_solid,
+                size: 30,
+                color: Colors.white,
+              )
+            : CircleAvatar(
+                foregroundImage: FileImage(_pickedImage!),
+                radius: 40,
+              ),
+      ),
+    );
+  }
+
+  void _showBottomSheet() {
+    showModalBottomSheet(
+        context: context,
+        builder: (context) {
+          return PickImageBottomSheet(
+            onPressedCamera: () => _onPressed(ImageSource.camera),
+            onPressedGallery: () => _onPressed(ImageSource.gallery),
+          );
+        });
+  }
+
+  void _onPressed(ImageSource source) {
+    ImagePicker().pickImage(source: source).then((xfile) {
+      if (xfile != null) {
+        setState(() {
+          _pickedImage = File(xfile.path);
+          widget.changeImageFile(_pickedImage);
+        });
+      }
+      Navigator.maybePop(context);
+    });
+  }
+}
+
+class PickImageBottomSheet extends StatelessWidget {
+  const PickImageBottomSheet(
+      {Key? key, required this.onPressedCamera, required this.onPressedGallery})
+      : super(key: key);
+
+  final VoidCallback onPressedCamera;
+  final VoidCallback onPressedGallery;
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: pagePadding,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextButton(
+              onPressed: onPressedCamera,
+              child: const Text('카메라로 촬영'),
+            ),
+            TextButton(
+              onPressed: onPressedGallery,
+              child: const Text('앨범에서 가져오기'),
+            ),
+          ],
         ),
       ),
     );
