@@ -50,7 +50,8 @@ class BottomSubmitButton extends StatelessWidget {
             // 아래 onpressed 는 기존에 애드 메디슨 페이지에 있던 것을 가져와서 컴포넌트 구조로 변경해준거야. 위젯 형태로
             onPressed: onPressed,
             style: ElevatedButton.styleFrom(
-                textStyle: Theme.of(context).textTheme.subtitle1),
+              textStyle: Theme.of(context).textTheme.subtitle1,
+            ),
             child: Text(text),
           ),
         ),
