@@ -3,8 +3,11 @@ import 'dart:io';
 import 'package:dory/components/dort_widgets.dart';
 import 'package:dory/components/dory_colors.dart';
 import 'package:dory/components/dory_constants.dart';
+import 'package:dory/models/medicine.dart';
 import 'package:dory/pages/add/add_medicinepage.dart';
-import 'package:dory/sevices/add_medicine_service.dart';
+import 'package:dory/services/add_medicine_service.dart';
+import 'package:dory/services/dory_file_service.dart';
+import 'package:dory/main.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -47,11 +50,40 @@ class AddAlarmPage extends StatelessWidget {
         ],
       ),
       bottomNavigationBar: BottomSubmitButton(
-        onPressed: () {
+        onPressed: () async {
+          bool result = false;
+
           // 1. add alarm
-          showPermissionDenied(context, permission: '알람');
+          for (var alarm in service.alarms) {
+            result = await notification.addNotifcication(
+              medicineId: medicineRepository.newId,
+              alarmTimeStr: alarm,
+              title: '$alarm 약 먹을 시간이에요',
+              body: '$medicineName 복약했다고 알려주세요',
+            );
+          }
+          if (!result) {
+            return showPermissionDenied(context, permission: '알람');
+          }
+
           // 2. save image (local dir)
+          String? imageFilePath;
+          if (medicineImage != null) {
+            imageFilePath = await saveImageToLocalDirectory(medicineImage!);
+          }
           // 3. add medicine model (local DB, hive)
+          final medicine = Medicine(
+            id: medicineRepository.newId,
+            name: medicineName,
+            imagePath: imageFilePath,
+            alarms: service.alarms.toList(),
+          );
+          medicineRepository.addMedicine(medicine);
+
+          // 자료 작성이 끝났을 때 페이지를 끄고 뒤로 이동될 수 있도록 하는 코드가 네비게이터 팝인데
+          // 네비게이터팝을 몇번씩 찍어서 하나씩 뒤로 보낼 수 있지만, 한번에 보낼 수 있는게 아래코드야
+          // Navigator.pop(context);
+          Navigator.popUntil(context, (route) => route.isFirst);
         },
         text: '완료',
       ),

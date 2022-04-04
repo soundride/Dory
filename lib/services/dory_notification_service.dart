@@ -57,7 +57,8 @@ class DoryNotificationService {
 
     /// id
     String alarmTimeId = alarmTimeStr.replaceAll(':', '');
-    alarmTimeId = medicineId.toString() + alarmTimeId;
+    alarmTimeId = medicineId.toString() +
+        alarmTimeId; //1 + 0800 = 10800 아이디와 시간이 이렇게 표시될거야
 
     /// add schedule notification
     final details = _notificationDetails(
